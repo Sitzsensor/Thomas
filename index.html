@@ -1,0 +1,173 @@
+  <!DOCTYPE html>
+<html>
+
+<head>
+  <title>Sitzsensor Web BLE Thomas</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.js"></script>
+  <script src="https://unpkg.com/p5ble@0.0.5/dist/p5.ble.js"></script>
+  
+</head>
+
+<body>
+  <h2 style="text-align: left">Sitzsensor Web BLE Thomas</h2>
+  <canvas id="myCanvas" width="320" height="480" style="border:1px solid #000000;">
+  Your browser does not support the HTML canvas tag.
+  </canvas>
+
+  <script>
+    // Create scale
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "green";
+    ctx.fillRect(15, 60, 40, 20);
+    ctx.fillRect(65, 60, 40, 20);
+    ctx.fillRect(115, 60, 40, 20);
+    ctx.fillStyle = "red";
+    ctx.fillRect(165, 60, 40, 20);
+    ctx.fillRect(215, 60, 40, 20);
+    ctx.fillRect(265, 60, 40, 20);
+    ctx.fillStyle = "green";
+    ctx.fillRect(15, 400, 40, 20);
+    ctx.fillRect(65, 400, 40, 20);
+    ctx.fillRect(115, 400, 40, 20);
+    ctx.fillStyle = "red";
+    ctx.fillRect(165, 400, 40, 20);
+    ctx.fillRect(215, 400, 40, 20);
+    ctx.fillRect(265, 400, 40, 20);
+  </script>
+
+  <script>
+      // Create the static text graphics
+      var c = document.getElementById("myCanvas");
+      var ctx = c.getContext("2d");
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "black";
+      ctx.fillText("Last hour", 120, 105);
+      ctx.fillText("AcY = ", 190, 470);
+      ctx.fillText("Now", 140, 445);
+  </script>
+
+  <script>
+    // Create the good seat body
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'green';
+    ctx.fillStyle = 'green';
+    ctx.moveTo(40, 150);
+    ctx.lineTo(40, 280); //Körper
+    ctx.lineTo(100, 280); //Schenkel
+    ctx.lineTo(100, 350); //Wade
+    ctx.lineTo(120, 350); //Fuss
+    ctx.moveTo(40, 200);
+    ctx.lineTo(100, 200); //Arm
+    ctx.moveTo(20, 285);
+    ctx.lineTo(60, 285); //Sitz
+    ctx.moveTo(40, 285);
+    ctx.lineTo(30, 350); //Stange
+    ctx.moveTo(10, 350);
+    ctx.lineTo(50, 350); //Fuss
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(40, 150, 20, 0, 2 * Math.PI); //Kopf
+    //ctx.stroke();
+    ctx.fill();
+   </script>
+
+
+  <script>
+    // Create the bad seat body
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'red';
+    ctx.fillStyle = 'red';
+    ctx.moveTo(290, 170);
+    ctx.lineTo(190, 280); //Körper
+    ctx.lineTo(260, 280); //Schenkel
+    ctx.lineTo(250, 350); //Wade
+    ctx.lineTo(270, 350); //Fuss
+    ctx.moveTo(310, 215);
+    ctx.lineTo(250, 215); //Arm
+    ctx.moveTo(180, 285);
+    ctx.lineTo(220, 285); //Sitz
+    ctx.moveTo(200, 285);
+    ctx.lineTo(210, 350); //Stange
+    ctx.moveTo(190, 350);
+    ctx.lineTo(230, 350); //Fuss
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(290, 170, 20, 0, 2 * Math.PI); //Kopf
+    //ctx.stroke();
+    ctx.fill();
+   </script> 
+
+  <script>
+    //Bluetooth
+    const serviceUuid = "19b10000-e8f2-537e-4f6c-d104768a1214";
+    let myCharacteristic;
+    let myValue = 0;
+    let AcY = 0;
+    let AcYold = 0;
+    let myBLE;
+
+    function setup() {
+      // Create a p5ble class
+      myBLE = new p5ble();
+
+      // Create a 'Connect' button
+       
+      const connectButton = createButton('Connect')
+      connectButton.mousePressed(connectToBle);
+    }
+
+    setInterval(update_AcY, 10);
+
+    function update_AcY() {
+      // Create the dynamic rectangles
+      var c = document.getElementById("myCanvas");
+      var ctx = c.getContext("2d");
+      ctx.font = "20px Arial";
+      ctx.fillStyle = 'white';
+      ctx.fillText(AcYold, 250,470);
+      ctx.fillStyle = 'black';
+      ctx.fillText(AcY, 250, 470);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(AcYold - 2, 370, 44, 20);
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(AcY, 370, 40, 20);
+
+      AcYold = AcY;
+    }
+
+    function connectToBle() {
+      // Connect to a device by passing the service UUID
+      myBLE.connect(serviceUuid, gotCharacteristics);
+    }
+
+    // A function that will be called once got characteristics
+    function gotCharacteristics(error, characteristics) {
+      if (error) console.log('error: ', error);
+      console.log('characteristics: ', characteristics);
+      myCharacteristic = characteristics[0];
+      // Read the value of the first characteristic
+      myBLE.read(myCharacteristic, 'string', gotValue);
+    }
+
+    // A function that will be called once got values
+    function gotValue(error, value) {
+      if (error) console.log('error: ', error);
+      //console.log('value: ', value);
+      myValue = value;
+      var acceleration = myValue.split('|');
+      AcY = acceleration[1];
+      // After getting a value, call p5ble.read() again to get the value again
+      myBLE.read(myCharacteristic, 'string', gotValue);
+    }
+
+  </script>
+
+</body>
+
+</html>
